@@ -9,10 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.5.34"
+    "echarts": "^6.1.0",
+    "gsap": "^3.15.0",
+    "three": "^0.184.0",
+    "vue": "^3.5.34",
+    "vue-echarts": "^8.0.1"
   },
   "devDependencies": {
     "@types/node": "^24.12.3",
+    "@types/three": "^0.184.1",
     "@vitejs/plugin-vue": "^6.0.6",
     "@vue/tsconfig": "^0.9.1",
     "typescript": "~6.0.2",
