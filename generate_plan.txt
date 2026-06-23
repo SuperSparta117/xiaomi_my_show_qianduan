@@ -1,0 +1,132 @@
+# UI Automation Test Dashboard - Implementation Plan
+
+## Context
+
+The user wants to build a visually impressive dashboard to display UI automation test results (bug/test data) for two websites (MUDE-R and MUDE-T), with a third "待开发" placeholder tab. The project is a fresh Vue 3 + Vite + TypeScript setup with no animation or chart libraries installed.
+
+Key requirements:
+- Three.js 3D particle background
+- GSAP for transitions, hover effects, mouse wave/ripple effect
+- ECharts for data visualization (gauges, pie charts, trend line chart)
+- 3-tab navigation with animated switching
+- Data stored in variables (not hardcoded), easy to modify later
+
+---
+
+## Step 1: Install Dependencies
+
+```bash
+npm install gsap three echarts vue-echarts
+npm install -D @types/three
+```
+
+---
+
+## Step 2: File Structure
+
+```
+src/
+├── App.vue                       # Root - orchestrates everything
+├── main.ts                       # Bootstrap + ECharts registration
+├── style.css                     # Reworked global styles (glassmorphism, dashboard)
+├── types/
+│   └── index.ts                  # TypeScript interfaces
+├── data/
+│   └── testData.ts               # Reactive data store (user edits here)
+├── composables/
+│   ├── useThreeBackground.ts     # Three.js particle wave
+│   └── useGsapAnimations.ts      # GSAP utilities
+└── components/
+    ├── ThreeBackground.vue       # 3D particle canvas
+    ├── MouseRippleEffect.vue     # Mouse wave trail
+    ├── TabNavigation.vue         # 3-tab bar with animated indicator
+    ├── TestResultPanel.vue       # Main data panel per site
+    ├── StatsCards.vue            # Animated number cards
+    ├── PassRateGauge.vue         # ECharts gauge
+    ├── ResultPieChart.vue        # ECharts doughnut chart
+    ├── TrendLineChart.vue        # ECharts 折线图 - 历史趋势
+    └── ComingSoon.vue            # Placeholder for 待开发 tab
+```
+
+Delete: `src/components/HelloWorld.vue` (demo component, no longer needed)
+
+---
+
+## Step 3: Implementation Details
+
+### Data Layer (`src/data/testData.ts`)
+- Single reactive object holding both sites' data
+- User changes numbers here only; reactivity propagates everywhere
+- Fields: siteName, env, startTime, totalCases, passed, failed, error, skipped, passRate, duration, reportLink
+- **新增**: `history` 字段 - 每个站点包含最近7天的模拟历史数据数组
+  ```ts
+  history: [
+    { date: '06-17', passRate: 87.5, failed: 48, total: 386 },
+    { date: '06-18', passRate: 88.1, failed: 45, total: 386 },
+    // ... 共7天
+  ]
+  ```
+
+### Three.js Background (`useThreeBackground.ts` + `ThreeBackground.vue`)
+- ~2000 particles in a `Points` geometry
+- Wave motion: `y = sin(x * freq + time)` displacement each frame
+- Purple-themed colors matching existing `--accent` variable
+- Full-viewport fixed canvas at z-index: -1
+- Cleanup on unmount
+
+### GSAP Animations (`useGsapAnimations.ts`)
+- `animateTabEnter/Leave`: slide + fade for tab switching (direction-aware)
+- `animateCardsIn`: staggered entrance for stat cards
+- `createRipple`: mouse wave effect (spawn circle at cursor, scale up + fade out)
+- `countUp`: animate numbers from 0 to target value
+
+### Mouse Ripple (`MouseRippleEffect.vue`)
+- Pointer-events: none overlay
+- Throttled mousemove listener
+- Spawns ripple circles that GSAP animates and removes
+
+### Tab Navigation (`TabNavigation.vue`)
+- 3 buttons: -R网站, -T网站, 待开发
+- Animated underline indicator (GSAP moves it on tab change)
+- Glassmorphism styling
+
+### ECharts Components
+- **PassRateGauge**: Semicircular gauge, red→yellow→green gradient, shows percentage
+- **ResultPieChart**: Doughnut chart showing pass/fail/error/skip distribution
+- **TrendLineChart**: 折线图显示最近7天历史趋势（通过率、失败数变化）
+  - 模拟数据存储在 `testData.ts` 中，用变量装载，后续替换为真实数据
+  - X轴: 日期（最近7天）
+  - Y轴: 双轴 - 左轴通过率%，右轴失败用例数
+  - 带渐变填充区域、平滑曲线、动画入场
+- 所有图表使用 `vue-echarts` with tree-shaken imports
+
+### Stats Cards (`StatsCards.vue`)
+- 5 cards: Total, Passed, Failed, Error, Skipped
+- Color-coded (green/red/orange/gray)
+- GSAP number counting animation on mount
+
+### Coming Soon (`ComingSoon.vue`)
+- Animated floating text with GSAP timeline (pulse + float)
+- Subtle glow effect
+
+### Styling Strategy
+- Rework `src/style.css`: remove demo styles, add dashboard variables
+- Glassmorphism panels: `backdrop-filter: blur(12px)`, semi-transparent backgrounds
+- Keep existing dark/light mode media query approach
+- New CSS variables: `--success`, `--danger`, `--warning`, `--card-bg`, `--glass-blur`
+
+### main.ts Updates
+- Register ECharts components (tree-shaking: PieChart, GaugeChart, LineChart, CanvasRenderer)
+- Register `VChart` globally
+
+---
+
+## Step 4: Verification
+
+1. Run `npm run dev` and open in browser
+2. Verify Three.js particle background renders and animates
+3. Click each tab - confirm GSAP slide transitions work
+4. Verify ECharts charts display correct data for -R and -T
+5. Move mouse around - confirm wave/ripple trail effect
+6. Check "待开发" tab shows animated placeholder
+7. Modify a number in `testData.ts` - confirm hot-reload updates charts
